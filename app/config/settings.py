@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     RESEND_FROM_EMAIL: str = "onboarding@resend.dev"
     RESEND_EMAIL_SUBJECT: str = "Follow-up"
 
-    REDIS_URL: str = "redis://localhost:6379/0"
+    REDIS_URL: str = f"rediss://{os.getenv('REDIS_USERNAME', '')}:{os.getenv('REDIS_PASSWORD', '')}@{os.getenv('REDIS_HOST', 'localhost')}:{os.getenv('REDIS_PORT', '6379')}/0"
 
     model_config = SettingsConfigDict(env_file=str(ENV_FILE), extra="ignore")
 
