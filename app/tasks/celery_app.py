@@ -1,3 +1,5 @@
+import ssl
+
 from celery import Celery
 from kombu import Queue
 
@@ -14,20 +16,50 @@ celery_app = Celery(
 )
 
 celery_app.conf.update(
+    # Serialization
     task_serializer="json",
     accept_content=["json"],
     result_serializer="json",
+
+    # Timezone
     timezone="UTC",
     enable_utc=True,
+
+    # Reliability
+    broker_connection_retry_on_startup=True,
+
+    # Queue Config
     task_default_queue=WORK_ITEM_PROCESSING_QUEUE,
+
     task_queues=(
-        Queue(WORK_ITEM_PROCESSING_QUEUE, routing_key=WORK_ITEM_PROCESSING_QUEUE),
+        Queue(
+            WORK_ITEM_PROCESSING_QUEUE,
+            routing_key=WORK_ITEM_PROCESSING_QUEUE,
+        ),
     ),
+
     task_default_exchange=WORK_ITEM_PROCESSING_QUEUE,
     task_default_routing_key=WORK_ITEM_PROCESSING_QUEUE,
+
+    # Task Routing
     task_routes={
-        "generate_email_draft": {"queue": WORK_ITEM_PROCESSING_QUEUE},
-        "regenerate_email_draft": {"queue": WORK_ITEM_PROCESSING_QUEUE},
-        "process_approved_email": {"queue": WORK_ITEM_PROCESSING_QUEUE},
+        "generate_email_draft": {
+            "queue": WORK_ITEM_PROCESSING_QUEUE
+        },
+        "regenerate_email_draft": {
+            "queue": WORK_ITEM_PROCESSING_QUEUE
+        },
+        "process_approved_email": {
+            "queue": WORK_ITEM_PROCESSING_QUEUE
+        },
+    },
+
+    # Redis SSL Fix for rediss://
+    broker_use_ssl={
+        "ssl_cert_reqs": ssl.CERT_NONE
+    },
+
+    redis_backend_use_ssl={
+        "ssl_cert_reqs": ssl.CERT_NONE
     },
 )
