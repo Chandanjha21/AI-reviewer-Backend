@@ -53,13 +53,4 @@ celery_app.conf.update(
             "queue": WORK_ITEM_PROCESSING_QUEUE
         },
     },
-
-    # Redis SSL Fix for rediss://
-    broker_use_ssl={
-        "ssl_cert_reqs": ssl.CERT_NONE
-    },
-
-    redis_backend_use_ssl={
-        "ssl_cert_reqs": ssl.CERT_NONE
-    },
 )
