@@ -53,4 +53,13 @@ celery_app.conf.update(
             "queue": WORK_ITEM_PROCESSING_QUEUE
         },
     },
+
+    broker_transport_options={
+        "socket_keepalive": True,
+        "socket_timeout": 30,
+        "socket_connect_timeout": 30,
+    },
+    result_backend_transport_options={
+        "socket_keepalive": True,
+    }
 )

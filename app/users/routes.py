@@ -1,8 +1,8 @@
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, Request, status
 
-from app.core.dependencies import require_admin
+from app.core.dependencies import get_current_user, require_admin
 from app.users.models import UserCreateRequest, UserResponse, UserUpdateRequest
 from app.users.operations import create_user, list_users, update_user
 
@@ -12,7 +12,8 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def create_user_route(payload: UserCreateRequest, current_user=Depends(require_admin)):
+async def create_user_route(request: Request, payload: UserCreateRequest):
+    current_user = require_admin(request)
     try:
         return create_user(
             organization_id=current_user["organization_id"],
@@ -31,16 +32,18 @@ def create_user_route(payload: UserCreateRequest, current_user=Depends(require_a
 
 
 @router.get("/", response_model=list[UserResponse])
-def list_users_route(
-    current_user=Depends(require_admin),
+async def list_users_route(
+    request: Request,
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
 ):
+    current_user = require_admin(request)
     return list_users(current_user["organization_id"], limit=limit, offset=offset)
 
 
 @router.patch("/{user_id}", response_model=UserResponse)
-def update_user_route(user_id: str, payload: UserUpdateRequest, current_user=Depends(require_admin)):
+async def update_user_route(request: Request, user_id: str, payload: UserUpdateRequest):
+    current_user = require_admin(request)
     try:
         updates = payload.model_dump(exclude_unset=True)
         if "role" in updates and updates["role"] is not None:

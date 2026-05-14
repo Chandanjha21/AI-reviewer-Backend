@@ -1,11 +1,14 @@
 import logging
+import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.auth.routes import router as auth_router
 from app.config.settings import settings
+from app.core.dependencies import introspect_bearer_token
 from app.core.errors import register_exception_handlers
 from app.customers.routes import router as customers_router
 from app.helpers.db_helper import init_db
@@ -42,10 +45,22 @@ def register_middleware(app: FastAPI) -> None:
 
 
 def register_routes(app: FastAPI) -> None:
+    # Auth routes don't need authentication
     app.include_router(auth_router)
-    app.include_router(users_router)
-    app.include_router(customers_router)
-    app.include_router(work_items_router)
+    
+    # All other routes require authentication
+    app.include_router(
+        users_router,
+        dependencies=[Depends(introspect_bearer_token)],
+    )
+    app.include_router(
+        customers_router,
+        dependencies=[Depends(introspect_bearer_token)],
+    )
+    app.include_router(
+        work_items_router,
+        dependencies=[Depends(introspect_bearer_token)],
+    )
 
     @app.get("/health", tags=["health"])
     def health():
