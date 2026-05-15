@@ -31,10 +31,10 @@ def register_organization(organization_name: str, admin_name: str, admin_email: 
             password=password,
             role=UserRole.ADMIN.value,
         )
-        token = create_access_token(
-            admin["id"],
-            {"organization_id": admin["organization_id"], "role": admin["role"]},
-        )
+        
+        # Create token with all user fields
+        token = create_access_token(admin)
+        
         return {"organization": created_org, "user": admin, "access_token": token}
     except Exception as e:
         print(e)
@@ -52,10 +52,10 @@ def authenticate_user(email: str, password: str) -> Dict:
 
         db_helper.update("users", {"id": user["id"]}, {"last_login": utc_now(), "updated_on": utc_now()})
         cleaned = sanitize_user(user)
-        token = create_access_token(
-            cleaned["id"],
-            {"organization_id": cleaned["organization_id"], "role": cleaned["role"]},
-        )
+        
+        # Create token with all user fields
+        token = create_access_token(cleaned)
+        
         return {"user": cleaned, "access_token": token}
     except Exception as e:
         print(e)

@@ -1,9 +1,9 @@
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, Request, status
 
-from app.core.dependencies import require_reviewer_or_admin
 from app.core.constants import WorkItemStatus
+from app.core.dependencies import get_current_user, require_reviewer_or_admin
 from app.customers.models import CustomerCreateRequest, CustomerResponse, CustomerUpdateRequest
 from app.customers.operations import create_customer, get_customer, list_customers_for_user, update_customer
 from app.tasks.email_tasks import generate_email_draft
@@ -15,7 +15,8 @@ router = APIRouter(prefix="/customers", tags=["customers"])
 
 
 @router.post("", response_model=CustomerResponse, status_code=status.HTTP_201_CREATED)
-def create_customer_route(payload: CustomerCreateRequest, current_user=Depends(require_reviewer_or_admin)):
+async def create_customer_route(request: Request, payload: CustomerCreateRequest):
+    current_user = require_reviewer_or_admin(request)
     try:
         customer = create_customer(
             current_user["organization_id"],
@@ -51,16 +52,18 @@ def create_customer_route(payload: CustomerCreateRequest, current_user=Depends(r
 
 
 @router.get("", response_model=list[CustomerResponse])
-def list_customers_route(
-    current_user=Depends(require_reviewer_or_admin),
+async def list_customers_route(
+    request: Request,
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
 ):
+    current_user = get_current_user(request)
     return list_customers_for_user(current_user, limit=limit, offset=offset)
 
 
 @router.get("/{customer_id}", response_model=CustomerResponse)
-def get_customer_route(customer_id: str, current_user=Depends(require_reviewer_or_admin)):
+async def get_customer_route(request: Request, customer_id: str):
+    current_user = get_current_user(request)
     customer = get_customer(current_user["organization_id"], customer_id)
     if not customer:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer not found")
@@ -68,11 +71,12 @@ def get_customer_route(customer_id: str, current_user=Depends(require_reviewer_o
 
 
 @router.patch("/{customer_id}", response_model=CustomerResponse)
-def update_customer_route(
+async def update_customer_route(
+    request: Request,
     customer_id: str,
     payload: CustomerUpdateRequest,
-    current_user=Depends(require_reviewer_or_admin),
 ):
+    current_user = get_current_user(request)
     try:
         customer = update_customer(
             current_user["organization_id"],
